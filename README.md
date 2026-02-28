@@ -1,8 +1,12 @@
-# Architecture Overview
+# Architecture Deep Dive: NexusCommerce
 
-This diagram represents the clean, modern architecture of the **NexusCommerce** web application.
+This document provides a comprehensive overview of the **NexusCommerce** architecture, covering high-level system design, detailed data flows, authentication logic, and frontend structure.
 
-## System Architecture
+---
+
+## 1. High-Level System Architecture
+
+The core infrastructure follows a decoupled Client-Server model with a dedicated Backend API and relational database.
 
 ```mermaid
 graph LR
@@ -48,7 +52,7 @@ graph LR
         E_Storage["🖼️ File Storage<br/>(Cloudinary/S3)"]
     end
 
-    %% Standard Request Flow (Solid Arrows)
+    %% Flows
     C_Web & C_Mob ==> FE_Pages
     FE_Pages ==> FE_API
     FE_API ==> BE_Mid
@@ -58,14 +62,9 @@ graph LR
     BE_Svc ==> BE_Repo
     BE_Repo ==> DB_Tables
     
-    %% Return Flow (Implicit via Bi-directional or logic)
-    %% To keep it clean, we use bi-directional logic in descriptions
-
-    %% Admin Flow (Dashed Arrows)
     P_Admin -.-> BE_Routes
     BE_Routes -.-> DB_Tables
 
-    %% External Connections
     BE_Svc --> E_Notify
     BE_Svc --> E_Storage
 
@@ -80,19 +79,114 @@ graph LR
     class DB_Tables dbStyle;
 ```
 
-### Request Flow Summary
+---
 
-1.  **Standard User Flow** (`==>`):
-    *   **Client** interacts with **Next.js Pages**.
-    *   **Frontend** manages state (Cart) and uses **Axios** to send requests.
-    *   **Backend** processes requests through **Middlewares** (JWT Auth) and **Routes**.
-    *   **Controllers** hand off to **Services** (Logic).
-    *   **Repositories** query the **Database**.
-    *   Response travels back through the same layers to the **Client**.
+## 2. Authentication Flow (JWT)
 
-2.  **Admin Flow** (`-.->`):
-    *   **Admin UI** targets specific **Admin Routes**.
-    *   Direct data manipulation via specialized controllers/services to the **Database**.
+A secure, stateless authentication mechanism using JSON Web Tokens (JWT).
 
-3.  **External Integrations**:
-    *   **Backend Services** trigger notifications (Email/SMS) and handle file uploads (Images) to external storage.
+```mermaid
+sequenceDiagram
+    participant User as 👤 Client (Browser)
+    participant NextJS as 🌐 Frontend (Next.js)
+    participant AuthAPI as 🛡️ Auth Route / Middleware
+    participant Controller as 🎮 Auth Controller
+    participant DB as 🗄️ Database
+    
+    User->>NextJS: Enters credentials (Email/Pass)
+    NextJS->>AuthAPI: POST /api/auth/login
+    AuthAPI->>Controller: Validates Payload
+    Controller->>DB: Check if User exists & Hash matches
+    DB-->>Controller: User Record Found
+    Controller->>Controller: Generates JWT (signed with Secret)
+    Controller-->>NextJS: Sends JWT in HttpOnly Cookie or Response
+    NextJS-->>User: Redirect to Dashboard / Home
+    
+    Note over User,DB: Subsequent Protected Requests
+    User->>AuthAPI: GET /api/orders (Includes JWT)
+    AuthAPI->>AuthAPI: Verify JWT Signature & Expiry
+    AuthAPI-->>Controller: Proceed to Business Logic
+```
+
+---
+
+## 3. Detailed Data & Logic Flow
+
+Explaining how data transforms from the database to the user interface.
+
+```mermaid
+graph TD
+    subgraph UI ["User Interface Layer"]
+        Comp["React Component (ProductList.jsx)"]
+        Hook["Custom Hook (useProducts)"]
+    end
+
+    subgraph API_Layer ["API Infrastructure"]
+        Axios["Axios Instance (Auth Headers)"]
+        BaseAPI["Express Router (/api/products)"]
+    end
+
+    subgraph Service_Oriented ["Business Logic Layer"]
+        Middle["Auth Middleware"]
+        Ctrl["ProductController"]
+        Svc["ProductService (Mapping / Calculations)"]
+        Repo["ProductRepository (SQL / Sequelize)"]
+    end
+
+    DB[(PostgreSQL)]
+
+    %% Connections
+    Comp <--> Hook
+    Hook <--> Axios
+    Axios <--> BaseAPI
+    BaseAPI --> Middle
+    Middle --> Ctrl
+    Ctrl --> Svc
+    Svc --> Repo
+    Repo <--> DB
+
+    style DB fill:#e1f5fe,stroke:#01579b
+    style Middle fill:#fff9c4,stroke:#fbc02d
+```
+
+---
+
+## 4. Frontend Component Architecture
+
+Modular structure for the Next.js application ensuring scalability and separation of concerns.
+
+```mermaid
+mindmap
+  root((Next.js App))
+    src/pages
+      (index.js - Home)
+      (products/id.js - Detail)
+      (cart.js - Checkout)
+      (admin/index.js - Dashboard)
+    src/components
+      [Layout - Nav/Footer]
+      [Common - Button/Card]
+      [Forms - Input/Labels]
+    src/hooks
+      [useAuth]
+      [useCart]
+      [useTableData]
+    src/store
+      (Zustand / Redux - Global State)
+    src/services
+      (api.js - Axios Config)
+```
+
+---
+
+### Layer Responsibilities
+
+| Layer | Responsibility |
+| :--- | :--- |
+| **Pages** | Route definitions and data fetching (SSR/Client-side). |
+| **Components** | Pure UI logic, reusable styles, and atomic elements. |
+| **Context/Store** | Global state management (Auth user, items in shopping cart). |
+| **Controllers** | Parsing request parameters, handling HTTP status codes. |
+| **Services** | Core business logic (Applying discounts, calculating taxes). |
+| **Repositories** | Direct database interaction (Clean SQL queries or ORM calls). |
+| **Middlewares** | Cross-cutting concerns like logging, auth, and error handling. |
