@@ -68,11 +68,11 @@ graph LR
     BE_Svc --> E_Notify
     BE_Svc --> E_Storage
 
-    %% Global Styling
-    classDef default fill:#ffffff,stroke:#333333,stroke-width:1px,color:#000000,rx:5,ry:5;
-    classDef container fill:#fcfcfc,stroke:#dddddd,stroke-width:1px,stroke-dasharray: 5 5;
-    classDef highlight fill:#ffffff,stroke:#007bff,stroke-width:2px;
-    classDef dbStyle fill:#fafafa,stroke:#28a745,stroke-width:2px;
+    %% Global Styling - Optimized for GitHub (Light/High-Contrast)
+    classDef default fill:#ffffff,stroke:#000000,stroke-width:1px,color:#000000,rx:5,ry:5;
+    classDef container fill:#ffffff,stroke:#cccccc,stroke-width:1px,stroke-dasharray: 5 5;
+    classDef highlight fill:#f8f9fa,stroke:#007bff,stroke-width:1.5px;
+    classDef dbStyle fill:#f8f9fa,stroke:#28a745,stroke-width:1.5px;
 
     class Client,Frontend,Backend,DB,Ext container;
     class FE_Pages,BE_Routes highlight;
@@ -87,6 +87,7 @@ A secure, stateless authentication mechanism using JSON Web Tokens (JWT).
 
 ```mermaid
 sequenceDiagram
+    autonumber
     participant User as 👤 Client (Browser)
     participant NextJS as 🌐 Frontend (Next.js)
     participant AuthAPI as 🛡️ Auth Route / Middleware
@@ -145,8 +146,12 @@ graph TD
     Svc --> Repo
     Repo <--> DB
 
-    style DB fill:#e1f5fe,stroke:#01579b
-    style Middle fill:#fff9c4,stroke:#fbc02d
+    %% Styling for visibility
+    style DB fill:#ffffff,stroke:#01579b,stroke-width:1.5px
+    style Middle fill:#ffffff,stroke:#d4a017,stroke-width:1.5px
+    style UI fill:#ffffff,stroke:#cccccc,stroke-dasharray: 5 5
+    style API_Layer fill:#ffffff,stroke:#cccccc,stroke-dasharray: 5 5
+    style Service_Oriented fill:#ffffff,stroke:#cccccc,stroke-dasharray: 5 5
 ```
 
 ---
